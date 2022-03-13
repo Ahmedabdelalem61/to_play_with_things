@@ -2,15 +2,10 @@
 
 simple app to show up some notifications and play with it
 
-## Getting Started
+## Foreground
 
-This project is a starting point for a Flutter application.
+https://user-images.githubusercontent.com/47370980/158047919-ff40be32-050a-40dc-9d04-6db4a9f952d9.mp4
 
-A few resources to get you started if this is your first Flutter project:
+## Background
+https://user-images.githubusercontent.com/47370980/158047929-ffb0072d-83c8-4247-98e1-ac05dec5a85b.mp4
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
