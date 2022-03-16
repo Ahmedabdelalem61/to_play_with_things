@@ -1,26 +1,30 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_notifications/services/local_notifications_service.dart';
-Future<void> messageHandler(RemoteMessage message)async{
+import 'package:google_sign_in/google_sign_in.dart';
+
+Future<void> messageHandler(RemoteMessage message) async {
   print(message.notification!.body);
 }
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   //background and the app terminated
   FirebaseMessaging.instance.getInitialMessage().then((message) {
-    if(message!=null)
-      {
-        final body = message.notification!.body;
-        print(body);
-      }
+    if (message != null) {
+      final body = message.notification!.body;
+      print(body);
+    }
   });
   //when app is in background and not terminated
   //it's better to use this func here outside the flutter specific classes as it will work all the time
   FirebaseMessaging.onBackgroundMessage(messageHandler);
   runApp(const MyApp());
-  }
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -32,7 +36,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Flutter Notifications Demo'),
     );
   }
 }
@@ -46,12 +50,52 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  Future<User> signInWithGoogle() async {
+    final googleSignIn = GoogleSignIn();
+    final googleUser = await googleSignIn.signIn();
+    if (googleUser != null) {
+      final googleAuth = await googleUser.authentication;
+      if (googleAuth.idToken != null) {
+        final userCredential = await FirebaseAuth.instance
+            .signInWithCredential(GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+          accessToken: googleAuth.accessToken,
+        ));
+        //TODO: get use from the credentail and register it in the firestore
+        final firebaseUser = userCredential.user;
+        if (firebaseUser != null) {
+          // Check is already sign up
+          final QuerySnapshot result = await FirebaseFirestore.instance
+              .collection('users')
+              .where('id', isEqualTo: firebaseUser.uid)
+              .get();
+          final List<DocumentSnapshot> documents = result.docs;
+          if (documents.length == 0) {
+            // Update data to server if new user
+            FirebaseFirestore.instance
+                .collection('users')
+                .doc(firebaseUser.uid)
+                .set({
+              'nickname': firebaseUser.displayName,
+              'photoUrl': firebaseUser.photoURL,
+              'id': firebaseUser.uid
+            });
+          }
+        }
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+        return userCredential.user!;
+      } else {
+        throw FirebaseAuthException(
+          code: 'ERROR_MISSING_GOOGLE_ID_TOKEN',
+          message: 'Missing Google ID Token',
+        );
+      }
+    } else {
+      throw FirebaseAuthException(
+        code: 'ERROR_ABORTED_BY_USER',
+        message: 'Sign in aborted by user',
+      );
+    }
   }
 
   @override
@@ -60,7 +104,7 @@ class _MyHomePageState extends State<MyHomePage> {
     LocalNotificationService.initialize(context);
     //foreground
     FirebaseMessaging.onMessage.listen((message) {
-      if(message != null){
+      if (message != null) {
         print(message.notification!.title);
         print(message.notification!.body);
         //as firebase doesn't support the pop up notifications in foreground we should use the local notification package
@@ -74,8 +118,8 @@ class _MyHomePageState extends State<MyHomePage> {
       LocalNotificationService.display(backgroundMessage);
     });
     super.initState();
-
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,23 +127,12 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+        child: ElevatedButton(
+          child: const Text('Sign in'),
+          onPressed: () {
+            signInWithGoogle();
+          },
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
