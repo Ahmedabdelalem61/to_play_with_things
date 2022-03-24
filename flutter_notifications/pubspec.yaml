@@ -17,12 +17,7 @@ dependencies:
   firebase_auth:
   google_sign_in:
   cloud_firestore:
-  firebase_storage:
-  fluttertoast:
-  shared_preferences:
-  image_picker: ^0.8.4+11
-  cached_network_image: ^3.2.0
-  intl: ^0.17.0
+  http: ^0.13.4
 
 
 dev_dependencies:
